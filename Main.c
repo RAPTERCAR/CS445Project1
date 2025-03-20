@@ -1,17 +1,19 @@
 #include<pthread.h>
 #include<stdio.h>
+#define TOTAL_BLOCKS 512
 
-
-struct Vol_Control_Block{
+struct Vol_Control_Block {
     int num_of_blocks;
     int block_size;
     int free_count;
-    //bit map - dont currently know what it is
+    int bit_map[TOTAL_BLOCKS];
 };
 
-//struct directory{
-//    char file_name[20];
-//};
+struct Directory_Entry {
+    char file_name[20];
+    int start_block;
+    int file_size;
+};
 
 struct File_Control_Block{
     int size;
