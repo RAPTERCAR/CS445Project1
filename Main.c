@@ -7,6 +7,7 @@
 #define MAX_FILES 100
 #define MAX_OPEN_FILES 100
 #define MAX_PROCESS_FILES 50
+#define BLOCK_SIZE 2048
 
 struct Vol_Control_Block {
     int num_of_blocks;
@@ -36,7 +37,11 @@ struct Process_open_File_Table{
     int handle;
 };
 
+struct Data_Block{
+    int block[BLOCK_SIZE];
+};
 // Instances:
+int disk[TOTAL_BLOCKS];
 struct Vol_Control_Block vcb;
 struct Directory_Entry directory[MAX_FILES];
 struct Sys_Open_File_Table sys_open_file_table[MAX_OPEN_FILES];
@@ -44,7 +49,7 @@ struct Process_open_File_Table process_open_file_table[MAX_PROCESS_FILES];
 
 void initialize_vcb() {
     vcb.num_of_blocks = TOTAL_BLOCKS;
-    vcb.block_size = 2048;
+    vcb.block_size = BLOCK_SIZE;
     vcb.free_count = TOTAL_BLOCKS - 1; // Block 0 reserved
     for (int i = 0; i < TOTAL_BLOCKS; i++) {
         vcb.bit_map[i] = (i == 0) ? 1 : 0; // Block 0 used
@@ -87,3 +92,7 @@ int main() {
 
     return 0;
 }
+
+//int write() {
+
+//}
