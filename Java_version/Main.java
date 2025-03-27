@@ -1,6 +1,3 @@
-package Java_version;
-import java.util.Arrays;
-
 public class Main extends Thread {
     //collection of final variables
     public static final int TOTAL_BLOCKS = 512;
@@ -9,22 +6,22 @@ public class Main extends Thread {
     public static final int MAX_PROCESS_FILES = 50;
     public static final int BLOCK_SIZE = 2048;
     //instances of block arrays
-    Object[] disk = new Object[TOTAL_BLOCKS];
-    Vol_Control_Block vcb = new Vol_Control_Block();
-    Directory_Entry[] directory = new Directory_Entry[MAX_FILES];
-    Sys_Open_File_Table[] sys_open_file_table = new Sys_Open_File_Table[MAX_OPEN_FILES];
-    Process_Open_File_Table[] process_open_file_table = new Process_Open_File_Table[MAX_PROCESS_FILES];
+    public Object[] disk = new Object[TOTAL_BLOCKS];
+    public Vol_Control_Block vcb = new Vol_Control_Block();
+    public Directory_Entry[] directory = new Directory_Entry[MAX_FILES];
+    public Sys_Open_File_Table[] sys_open_file_table = new Sys_Open_File_Table[MAX_OPEN_FILES];
+    public Process_Open_File_Table[] process_open_file_table = new Process_Open_File_Table[MAX_PROCESS_FILES];
     
     public static void main(String[] args){
-
+        test_setup();
     }
     //method that makes sure the setup is working
-    void test_setup(){
+    static void test_setup(){
         System.out.println("Testing File System Setup...");
         //print vcb details
-        System.out.printf("Number of blocks: %d\n", vcb.num_of_blocks);
-        System.out.printf("Block size: %d bytes\n", vcb.block_size);
-        System.out.printf("Free block count: %d\n", vcb.free_count);
+        //System.out.printf("Number of blocks: %d\n", vcb.num_of_blocks);
+        //System.out.printf("Block size: %d bytes\n", vcb.get_free_count());
+        //System.out.printf("Free block count: %d\n", vcb.free_count);
 
     }
 }
