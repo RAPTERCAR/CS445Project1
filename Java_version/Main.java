@@ -1,3 +1,4 @@
+
 public class Main extends Thread {
     //collection of final variables
     public static final int TOTAL_BLOCKS = 512;
@@ -14,6 +15,8 @@ public class Main extends Thread {
     
     public static void main(String[] args){
         test_setup();
+        disk[0] = vcb;
+
     }
     //method that makes sure the setup is working
     static void test_setup(){
@@ -24,7 +27,48 @@ public class Main extends Thread {
         System.out.printf("Free block count: %d\n", vcb.free_count);
 
     }
+
+    static void create(String name, int size, String data){
+        System.out.println("aaa");
+
+    }
+    static void write(String data, int size){
+        System.out.println("aaa");
+        int index = find_free(size);
+
+    }
+    //finds free space on disk and returns its starting index
+    static int find_free(int size){
+        if (vcb.free_count < size){
+            return -1;
+        }
+        int start = -1;
+        boolean free = false;
+        int searchSize = 0;
+        for (int i = 1; i < TOTAL_BLOCKS; i++){
+            
+            if (vcb.bit_map[i] == 0 && !free){
+                start = i;
+                searchSize = 1;
+                free = true;
+            }
+            else if (vcb.bit_map[i] == 0 && free){
+                searchSize++;
+            }
+            else if (vcb.bit_map[i] == 1){
+                searchSize = 0;
+                free = false;
+                start = -1;
+            }
+            if(searchSize == size){
+                break;
+            }
+        }
+        return start;
+    }
+
 }
+
 
 class Vol_Control_Block{
     public int num_of_blocks;
