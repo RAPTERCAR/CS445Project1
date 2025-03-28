@@ -37,6 +37,20 @@ public class Main extends Thread {
         int index = find_free(size);
 
     }
+    //splits data string into substrings in an array to be placed into blocks
+    static String[] split_data(String data){
+        //ArrayList split = new ArrayList<String>();
+        int size = (int)Math.ceil(data.length() / BLOCK_SIZE);
+        String[] split = new String[size];
+        int end = 2048;
+        int start = 0;
+        for(int i = 0; i < size; i++){
+            split[i] = data.substring(start, end);
+            start = end + 1;
+            end += 2048;
+        }
+        return split;
+    }
     //finds free space on disk and returns its starting index
     static int find_free(int size){
         if (vcb.free_count < size){
