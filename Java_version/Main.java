@@ -21,9 +21,9 @@ public class Main extends Thread {
     
     
     public static void main(String[] args){
-        test_setup();
+        //test_setup();
         disk[0] = vcb;
-
+        create("testFile", 2, "testing create");
     }
     //method that makes sure the setup is working
     static void test_setup(){
@@ -36,7 +36,7 @@ public class Main extends Thread {
     }
 
     static void create(String name, int size, String data){
-        System.out.println("aaa");
+        System.out.println("Creating File");
         int index = find_free(size);
         directory[num_of_files++] = new Directory_Entry(name, index, size);
         open(name);
@@ -62,12 +62,13 @@ public class Main extends Thread {
         process_open_file_table.set(proc);
     }
     //finds file in directory and returns array containing start and size, index 0 used to communicate if file found
-    static int[] find_file(String name){
+    static int[] find_file(String name) {
         int[] contents = new int[3];
-        contents[0] = -1;//-1 indicates no found file
-        for (Directory_Entry d : directory){
-            if (d.get_name().toString().equals(name)){
-                contents[0] = 1; //found file
+        contents[0] = -1; // -1 indicates no found file
+    
+        for (Directory_Entry d : directory) {
+            if (d != null && new String(d.get_name()).trim().equals(name)) { 
+                contents[0] = 1; // Found file
                 contents[1] = d.get_start();
                 contents[2] = d.get_size();
                 return contents;
@@ -75,6 +76,7 @@ public class Main extends Thread {
         }
         return contents;
     }
+    
     //splits data string into substrings in an array to be placed into blocks
     static String[] split_data(String data){
         //ArrayList split = new ArrayList<String>();
