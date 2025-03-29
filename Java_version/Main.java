@@ -11,9 +11,13 @@ public class Main extends Thread {
     static Vol_Control_Block vcb = new Vol_Control_Block();
     static Directory_Entry[] directory = new Directory_Entry[MAX_FILES];
     static Sys_Open_File_Table[] sys_open_file_table = new Sys_Open_File_Table[MAX_OPEN_FILES];
-    static Process_Open_File_Table[] process_open_file_table = new Process_Open_File_Table[MAX_PROCESS_FILES];
+    static ThreadLocal<Process_Open_File_Table[]> process_open_file_table = ThreadLocal.withInitial(() -> {
+        Process_Open_File_Table[] array = new Process_Open_File_Table[MAX_PROCESS_FILES]; // Create an array of Process_Open_File_Table with size 5
+        return array;
+    });
     static int num_of_files = 0;
     static int sys_index = 0;
+    static ThreadLocal<Integer> proc_index = ThreadLocal.withInitial(() -> 0);
     
     
     public static void main(String[] args){
@@ -34,7 +38,7 @@ public class Main extends Thread {
     static void create(String name, int size, String data){
         System.out.println("aaa");
         int index = find_free(size);
-        directory[num_of_files] = new Directory_Entry(name, index, size);
+        directory[num_of_files++] = new Directory_Entry(name, index, size);
 
     }
     static void write(String data, int size){
@@ -45,7 +49,9 @@ public class Main extends Thread {
     static void open(String name){
         int[] info = find_file(name);
         if(info[0] != -1){
-            sys_open_file_table[sys_index] = new Sys_Open_File_Table(name, new File_Control_Block(info[2],(Data_Block)disk[info[1]]));
+            //sys_open_file_table[sys_index] = new Sys_Open_File_Table(name, new File_Control_Block(info[2],(Data_Block)disk[info[1]]));
+            
+            //process_open_file_table[]
         }
         else{
             System.out.println("No such file found");
