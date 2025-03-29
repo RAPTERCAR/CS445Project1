@@ -12,6 +12,9 @@ public class Main extends Thread {
     static Directory_Entry[] directory = new Directory_Entry[MAX_FILES];
     static Sys_Open_File_Table[] sys_open_file_table = new Sys_Open_File_Table[MAX_OPEN_FILES];
     static Process_Open_File_Table[] process_open_file_table = new Process_Open_File_Table[MAX_PROCESS_FILES];
+    static int num_of_files = 0;
+    static int sys_index = 0;
+    
     
     public static void main(String[] args){
         test_setup();
@@ -30,12 +33,37 @@ public class Main extends Thread {
 
     static void create(String name, int size, String data){
         System.out.println("aaa");
+        int index = find_free(size);
+        directory[num_of_files] = new Directory_Entry(name, index, size);
 
     }
     static void write(String data, int size){
         System.out.println("aaa");
         int index = find_free(size);
 
+    }
+    static void open(String name){
+        int[] info = find_file(name);
+        if(info[0] != -1){
+            sys_open_file_table[sys_index] = new Sys_Open_File_Table(name, new File_Control_Block(info[2],(Data_Block)disk[info[1]]));
+        }
+        else{
+            System.out.println("No such file found");
+        }
+    }
+    //finds file in directory and returns array containing start and size, index 0 used to communicate if file found
+    static int[] find_file(String name){
+        int[] contents = new int[3];
+        contents[0] = -1;//-1 indicates no found file
+        for (Directory_Entry d : directory){
+            if (d.get_name().toString().equals(name)){
+                contents[0] = 1; //found file
+                contents[1] = d.get_start();
+                contents[2] = d.get_size();
+                return contents;
+            }
+        }
+        return contents;
     }
     //splits data string into substrings in an array to be placed into blocks
     static String[] split_data(String data){
@@ -159,5 +187,14 @@ class Directory_Entry {
         file_name = name.toCharArray();
         start_block = start;
         file_size = size;
+    }
+    public char[] get_name(){
+        return file_name;
+    }
+    public int get_start(){
+        return start_block;
+    }
+    public int get_size(){
+        return file_size;
     }
 }
