@@ -28,6 +28,9 @@ public class Main extends Thread {
         for (int i = 0; i < MAX_FILES; i++) {
             disk[i] = new Data_Block();
         }
+        for (int i = 0; i < MAX_OPEN_FILES; i++) {
+            sys_open_file_table[i] = new Sys_Open_File_Table();
+        }
         //disk[0] = vcb;
         create("testFile", 2, "testing create");
         write("testing write", "testFile");
@@ -85,9 +88,11 @@ public class Main extends Thread {
 
             if(info[0] != -1){
                 tOpen.acquire();
-                sys_open_file_table[sys_index++] = new Sys_Open_File_Table(name, new File_Control_Block(info[2],(Data_Block)disk[info[1]]));
-                tOpen.release();
+                if (findSys(name) == -1) {
+                 sys_open_file_table[sys_index++] = new Sys_Open_File_Table(name, new File_Control_Block(info[2],(Data_Block)disk[info[1]]));
+                }
                 proc[pI++] = new Process_Open_File_Table(name,sys_index-1);
+                tOpen.release();
             }
             else{
                 System.out.println("No such file found");
@@ -98,6 +103,10 @@ public class Main extends Thread {
             e.printStackTrace();
         }
         
+    }
+
+    static void close(String name) {
+
     }
 
     static String read(String name) {
@@ -180,6 +189,16 @@ public class Main extends Thread {
         }
         return start;
     }
+    //method that looks through system open file table to find instances
+    static int findSys(String name) {
+        int i = -1;
+        for (Sys_Open_File_Table file : sys_open_file_table) {
+            if (file.getName().equals(name)) {
+                return i = file.getInstance();
+            }
+        }
+        return i;
+    }
 
 }
 
@@ -251,10 +270,28 @@ class Process_Open_File_Table{
 class Sys_Open_File_Table{
     char[] file_name = new char[20];
     File_Control_Block fcb;
+    int instances;
+
+    public Sys_Open_File_Table() {
+        file_name = "".toCharArray();
+    }
 
     public Sys_Open_File_Table(String name, File_Control_Block f){
         file_name = name.toCharArray();
         fcb = f;
+        instances = 0;
+    }
+
+    public void mod_instance(int i) {
+        instances += i;
+    }
+
+    public int getInstance() {
+        return instances;
+    }
+
+    public String getName() {
+        return String.copyValueOf(file_name);
     }
 }
 class Directory_Entry {
