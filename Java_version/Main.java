@@ -31,15 +31,21 @@ public class Main extends Thread {
         for (int i = 0; i < MAX_OPEN_FILES; i++) {
             sys_open_file_table[i] = new Sys_Open_File_Table();
         }
-        //disk[0] = vcb;
-        create("testFile", 2, "testing create");
-        write("testing write", "testFile");
-        System.out.println(read("testFile"));
+        Thread p1 = new Thread1();
+        p1.start();
+
+        while (p1.isAlive()) { 
+            System.out.print("");
+        }
+        Thread p2 = new Thread2();
+        Thread p3 = new Thread3();
+
+        p2.start();
+        p3.start();
     }
 
     static void create(String name, int size, String data){
         try{
-            System.out.println("Creating File");
             int index = find_free(size);
             tCreate.acquire();
             directory[num_of_files++] = new Directory_Entry(name, index, size);
@@ -55,21 +61,21 @@ public class Main extends Thread {
     }
     static void write(String data, String name){
         try {
-            System.out.println("Attempting to Write to file");
             int[] info = find_file(name);
             int index = info[1];
-            int bigger = info[2];
+            int size = info[2];
             if(info[0] != -1){
-                String[] datas = split_data(data);
-                if(datas.length < bigger){
-                    bigger = datas.length;
-                }
-                for(int i = 0; i < bigger; i++){
-                    tWrite.acquire();
+                String[] datas = split_data(data, size);
+                //if(datas.length < bigger){
+                //    bigger = datas.length;
+                //}
+                tWrite.acquire();
+                for(int i = 0; i < size; i++){
                     disk[index] = new Data_Block(datas[i]);
-                    tWrite.release();
+                    vcb.bit_map[index] = 1;
                     index++;
                 }
+                tWrite.release();
                 System.out.println("Write successfull");
             }
             else{
@@ -130,7 +136,8 @@ public class Main extends Thread {
                 tOpen.release();
                 int pID = findProc(name);
                 proc[pID] = new Process_Open_File_Table();//remove file from proc open file table by setting it to an empty object
-
+                process_open_file_table.set(proc);
+                System.out.println(name + " successfully closed");
             }
         } catch (InterruptedException e) {
             e.printStackTrace();
@@ -168,20 +175,26 @@ public class Main extends Thread {
     }
     
     //splits data string into substrings in an array to be placed into blocks
-    static String[] split_data(String data){
+    static String[] split_data(String data,int size){
         //ArrayList split = new ArrayList<String>();
-        int size = (int)Math.ceil((data.length() / BLOCK_SIZE));
-        if(size == 0){
-            size = 1;
-        }
-        System.out.println(size);
         String[] split = new String[size];
-        int end = data.length();
-        int start = 0;
+        int end;
+        String temp = data;
+        boolean empty = false;//tracks if there is still data to split into blocks
         for(int i = 0; i < size; i++){
-            split[i] = data.substring(start, end);
-            start = end + 1;
-            end += 2048;
+            if(!empty){
+                end = 2048;
+                if (temp.length() < 2048){
+                    end = temp.length();
+                    empty = true;
+                }
+                split[i] = temp.substring(0, end);
+                temp= temp.substring(end);
+            }
+           else{//if no more data, fill add empty string 
+                split[i] = "";
+           }
+           
         }
         for (int i = 0; i < size; i++) {
             System.out.println(split[i]);
@@ -240,6 +253,66 @@ public class Main extends Thread {
             }
         }
         return info;
+    }
+
+    static void processFileSetup() {
+        Process_Open_File_Table[] proc = process_open_file_table.get();
+        for (int i = 0; i < MAX_PROCESS_FILES; i++) {
+            proc[i] = new Process_Open_File_Table();
+        }
+        process_open_file_table.set(proc);
+    }
+}
+
+class Thread1 extends Thread{
+    @Override
+    public void run() {
+        p1Seq();
+    }
+
+    void p1Seq() {
+        Main.processFileSetup();
+
+        Main.create("file1", 4, "test");
+        Main.write("this is file1", "file1");
+        Main.close("file1");
+
+        Main.create("file2", 4, "test2");
+        Main.write("this is file2", "file2");
+        Main.close("file2");
+        
+    }
+}
+
+class Thread2 extends Thread{
+    @Override
+    public void run() {
+        p2Seq();
+    }
+
+    void p2Seq() {
+        Main.processFileSetup();
+
+        System.out.println("p2 started");
+        Main.open("file1");
+        System.out.println(Main.read("file1"));
+        Main.close("file1");
+    }
+}
+
+class Thread3 extends Thread{
+    @Override
+    public void run() {
+        p3Seq();
+    }
+
+    void p3Seq() {
+        Main.processFileSetup();
+
+        System.out.println("p3 started");
+        Main.open("file2");
+        System.out.println(Main.read("file2"));
+        Main.close("file2");
     }
 }
 
