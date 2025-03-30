@@ -1,3 +1,4 @@
+import java.util.concurrent.Semaphore;
 
 public class Main extends Thread {
     //collection of final variables
@@ -6,6 +7,9 @@ public class Main extends Thread {
     public static final int MAX_OPEN_FILES = 100;
     public static final int MAX_PROCESS_FILES = 50;
     public static final int BLOCK_SIZE = 2048;
+    private static final Semaphore tWrite = new Semaphore(1);
+    private static final Semaphore tOpen = new Semaphore(1);
+    private static final Semaphore tCreate = new Semaphore(1);
     //instances of block arrays
     static Data_Block[] disk = new Data_Block[TOTAL_BLOCKS];
     static Vol_Control_Block vcb = new Vol_Control_Block();
@@ -31,47 +35,69 @@ public class Main extends Thread {
     }
 
     static void create(String name, int size, String data){
-        System.out.println("Creating File");
-        int index = find_free(size);
-        directory[num_of_files++] = new Directory_Entry(name, index, size);
-        open(name);
-
+        try{
+            System.out.println("Creating File");
+            int index = find_free(size);
+            tCreate.acquire();
+            directory[num_of_files++] = new Directory_Entry(name, index, size);
+            
+        }
+        catch(InterruptedException e){
+            e.printStackTrace();
+        }
+        finally{
+            tCreate.release();
+            open(name);
+        }
     }
     static void write(String data, String name){
-        System.out.println("Attempting to Write to file");
-        int[] info = find_file(name);
-        int index = info[1];
-        int bigger = info[2];
-        if(info[0] != -1){
-            String[] datas = split_data(data);
-            if(datas.length < bigger){
-                bigger = datas.length;
+        try {
+            System.out.println("Attempting to Write to file");
+            int[] info = find_file(name);
+            int index = info[1];
+            int bigger = info[2];
+            if(info[0] != -1){
+                String[] datas = split_data(data);
+                if(datas.length < bigger){
+                    bigger = datas.length;
+                }
+                for(int i = 0; i < bigger; i++){
+                    tWrite.acquire();
+                    disk[index] = new Data_Block(datas[i]);
+                    tWrite.release();
+                    index++;
+                }
+                System.out.println("Write successfull");
             }
-            for(int i = 0; i < bigger; i++){
-                disk[index] = new Data_Block(datas[i]);
-                index++;
+            else{
+                System.out.println("No such file found");
             }
-            System.out.println("Write successfull");
-        }
-        else{
-            System.out.println("No such file found");
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
         
     }
     static void open(String name){
-        int[] info = find_file(name);
-        Process_Open_File_Table[] proc = process_open_file_table.get();
-        Integer pI = proc_index.get();
+        try {
+            int[] info = find_file(name);
+            Process_Open_File_Table[] proc = process_open_file_table.get();
+            Integer pI = proc_index.get();
 
-        if(info[0] != -1){
-            sys_open_file_table[sys_index++] = new Sys_Open_File_Table(name, new File_Control_Block(info[2],(Data_Block)disk[info[1]]));
-            proc[pI++] = new Process_Open_File_Table(name,sys_index-1);
+            if(info[0] != -1){
+                tOpen.acquire();
+                sys_open_file_table[sys_index++] = new Sys_Open_File_Table(name, new File_Control_Block(info[2],(Data_Block)disk[info[1]]));
+                tOpen.release();
+                proc[pI++] = new Process_Open_File_Table(name,sys_index-1);
+            }
+            else{
+                System.out.println("No such file found");
+            }
+            process_open_file_table.set(proc);
+            proc_index.set(pI);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
-        else{
-            System.out.println("No such file found");
-        }
-        process_open_file_table.set(proc);
-        proc_index.set(pI);
+        
     }
 
     static String read(String name) {
