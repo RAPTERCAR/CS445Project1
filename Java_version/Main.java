@@ -88,10 +88,15 @@ public class Main extends Thread {
 
             if(info[0] != -1){
                 tOpen.acquire();
-                if (findSys(name) == -1) {
-                 sys_open_file_table[sys_index++] = new Sys_Open_File_Table(name, new File_Control_Block(info[2],(Data_Block)disk[info[1]]));
+                int[] sys = findSys(name);
+                if (sys[1] == -1) {//if file isnt in open file table
+                 sys_open_file_table[sys_index] = new Sys_Open_File_Table(name, new File_Control_Block(info[2],(Data_Block)disk[info[1]]));
+                 sys[0] = sys_index++;
                 }
-                proc[pI++] = new Process_Open_File_Table(name,sys_index-1);
+                else{//if it is in the table
+                    sys_open_file_table[sys[0]].mod_instance(1);
+                }
+                proc[pI++] = new Process_Open_File_Table(name,sys[0]);
                 tOpen.release();
             }
             else{
@@ -106,7 +111,30 @@ public class Main extends Thread {
     }
 
     static void close(String name) {
+        try {
+            int[] info = find_file(name);
+            Process_Open_File_Table[] proc = process_open_file_table.get();
+            //Integer pI = proc_index.get();
+            if(info[0] != -1){//ensures file exists
+                tOpen.acquire();
+                int[] sys = findSys(name);
+                if (sys[1] == 1) {//if file is on its last instance
+                    sys_open_file_table[sys[0]] = new Sys_Open_File_Table(); //remove entry by replacing it with an empty entry
+                }
+                else if (sys[1] > 1){//if multiple instances, reduce by one
+                    sys_open_file_table[sys[0]].mod_instance(-1);
+                }
+                else{
+                    System.out.println("File not found");
+                }
+                tOpen.release();
+                int pID = findProc(name);
+                proc[pID] = new Process_Open_File_Table();//remove file from proc open file table by setting it to an empty object
 
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     static String read(String name) {
@@ -190,16 +218,29 @@ public class Main extends Thread {
         return start;
     }
     //method that looks through system open file table to find instances
-    static int findSys(String name) {
-        int i = -1;
-        for (Sys_Open_File_Table file : sys_open_file_table) {
-            if (file.getName().equals(name)) {
-                return i = file.getInstance();
+    static int[] findSys(String name) {
+        int[] info = {-1,-1}; //index 0 represents file index on table, index 1 reps num of instances
+        for (int i = 0; i < MAX_OPEN_FILES;i++ ) {
+            if (sys_open_file_table[i].getName().equals(name)) {
+                info[1] = sys_open_file_table[i].getInstance();
+                info[0] = i;
+                return info;
             }
         }
-        return i;
+        return info;
     }
-
+    //returns index of file in process open file table
+    static int findProc(String name) {
+        int info = -1; //index 0 represents file index on table, index 1 reps num of instances
+        Process_Open_File_Table[] proc = process_open_file_table.get();
+        for (int i = 0; i < MAX_OPEN_FILES;i++ ) {
+            if (proc[i].getName().equals(name)) {
+                info = i;
+                return info;
+            }
+        }
+        return info;
+    }
 }
 
 
@@ -261,9 +302,16 @@ class Process_Open_File_Table{
     char[] file_name = new char[20];
     int handle;
 
+    public Process_Open_File_Table(){
+        file_name = "".toCharArray();
+        handle = -1;
+    }
     public Process_Open_File_Table(String name, int i){
         file_name = name.toCharArray();
         handle = i;
+    }
+    public String getName() {
+        return String.copyValueOf(file_name);
     }
 }
 
@@ -279,7 +327,7 @@ class Sys_Open_File_Table{
     public Sys_Open_File_Table(String name, File_Control_Block f){
         file_name = name.toCharArray();
         fcb = f;
-        instances = 0;
+        instances = 1;
     }
 
     public void mod_instance(int i) {
