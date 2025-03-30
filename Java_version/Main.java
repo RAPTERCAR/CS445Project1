@@ -7,7 +7,7 @@ public class Main extends Thread {
     public static final int MAX_PROCESS_FILES = 50;
     public static final int BLOCK_SIZE = 2048;
     //instances of block arrays
-    static Object[] disk = new Object[TOTAL_BLOCKS];
+    static Data_Block[] disk = new Data_Block[TOTAL_BLOCKS];
     static Vol_Control_Block vcb = new Vol_Control_Block();
     static Directory_Entry[] directory = new Directory_Entry[MAX_FILES];
     static Sys_Open_File_Table[] sys_open_file_table = new Sys_Open_File_Table[MAX_OPEN_FILES];
@@ -21,18 +21,13 @@ public class Main extends Thread {
     
     
     public static void main(String[] args){
-        //test_setup();
-        disk[0] = vcb;
+        for (int i = 0; i < MAX_FILES; i++) {
+            disk[i] = new Data_Block();
+        }
+        //disk[0] = vcb;
         create("testFile", 2, "testing create");
-    }
-    //method that makes sure the setup is working
-    static void test_setup(){
-        System.out.println("Testing File System Setup...");
-        //print vcb details
-        System.out.printf("Number of blocks: %d\n", vcb.num_of_blocks);
-        System.out.printf("Block size: %d bytes\n", vcb.get_free_count());
-        System.out.printf("Free block count: %d\n", vcb.free_count);
-
+        write("testing write", "testFile");
+        System.out.println(read("testFile"));
     }
 
     static void create(String name, int size, String data){
@@ -43,12 +38,16 @@ public class Main extends Thread {
 
     }
     static void write(String data, String name){
-        System.out.println("aaa");
+        System.out.println("Attempting to Write to file");
         int[] info = find_file(name);
         int index = info[1];
+        int bigger = info[2];
         if(info[0] != -1){
             String[] datas = split_data(data);
-            for(int i = 0; i < info[2]; i++){
+            if(datas.length < bigger){
+                bigger = datas.length;
+            }
+            for(int i = 0; i < bigger; i++){
                 disk[index] = new Data_Block(datas[i]);
                 index++;
             }
@@ -108,14 +107,21 @@ public class Main extends Thread {
     //splits data string into substrings in an array to be placed into blocks
     static String[] split_data(String data){
         //ArrayList split = new ArrayList<String>();
-        int size = (int)Math.ceil(data.length() / BLOCK_SIZE);
+        int size = (int)Math.ceil((data.length() / BLOCK_SIZE));
+        if(size == 0){
+            size = 1;
+        }
+        System.out.println(size);
         String[] split = new String[size];
-        int end = 2048;
+        int end = data.length();
         int start = 0;
         for(int i = 0; i < size; i++){
             split[i] = data.substring(start, end);
             start = end + 1;
             end += 2048;
+        }
+        for (int i = 0; i < size; i++) {
+            System.out.println(split[i]);
         }
         return split;
     }
@@ -179,6 +185,9 @@ class Vol_Control_Block{
 
 class Data_Block{
     public char[] data = new char[Main.BLOCK_SIZE];
+    public Data_Block() {
+        data = "".toCharArray();
+    }
 
     public Data_Block(String s){
         data = s.toCharArray();
@@ -189,7 +198,7 @@ class Data_Block{
     }
 
     public String getData() {
-        return data.toString();
+        return String.copyValueOf(data);
     }
 }
 
