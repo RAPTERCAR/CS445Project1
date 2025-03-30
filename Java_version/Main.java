@@ -42,10 +42,22 @@ public class Main extends Thread {
         open(name);
 
     }
-    static void write(String data, int size){
+    static void write(String data, String name){
         System.out.println("aaa");
-        int index = find_free(size);
-
+        int[] info = find_file(name);
+        int index = info[1];
+        if(info[0] != -1){
+            String[] datas = split_data(data);
+            for(int i = 0; i < info[2]; i++){
+                disk[index] = new Data_Block(datas[i]);
+                index++;
+            }
+            System.out.println("Write successfull");
+        }
+        else{
+            System.out.println("No such file found");
+        }
+        
     }
     static void open(String name){
         int[] info = find_file(name);
@@ -60,6 +72,7 @@ public class Main extends Thread {
             System.out.println("No such file found");
         }
         process_open_file_table.set(proc);
+        proc_index.set(pI);
     }
     //finds file in directory and returns array containing start and size, index 0 used to communicate if file found
     static int[] find_file(String name) {
