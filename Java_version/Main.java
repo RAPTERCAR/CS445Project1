@@ -31,12 +31,16 @@ public class Main extends Thread {
         for (int i = 0; i < MAX_OPEN_FILES; i++) {
             sys_open_file_table[i] = new Sys_Open_File_Table();
         }
+        //create and start first thread
         Thread p1 = new Thread1();
         p1.start();
 
+        //wait for p1 to finish tasks
         while (p1.isAlive()) { 
             System.out.print("");
         }
+
+        //create other threads and start them simultaneously
         Thread p2 = new Thread2();
         Thread p3 = new Thread3();
 
@@ -46,37 +50,35 @@ public class Main extends Thread {
 
     static void create(String name, int size, String data){
         try{
-            int index = find_free(size);
-            tCreate.acquire();
-            directory[num_of_files++] = new Directory_Entry(name, index, size);
+            int index = find_free(size); //find free space
+            tCreate.acquire(); //enter critical section
+            directory[num_of_files++] = new Directory_Entry(name, index, size); //add file to directory 
             
         }
         catch(InterruptedException e){
             e.printStackTrace();
         }
         finally{
-            tCreate.release();
+            tCreate.release(); //exit critical section
             open(name);
         }
     }
     static void write(String data, String name){
         try {
-            int[] info = find_file(name);
+            int[] info = find_file(name); //find file to write to
             int index = info[1];
             int size = info[2];
             if(info[0] != -1){
-                String[] datas = split_data(data, size);
-                //if(datas.length < bigger){
-                //    bigger = datas.length;
-                //}
+                String[] datas = split_data(data, size); //spit data into chunks to be put into blocks
                 tWrite.acquire();
+                //loop adds the data chunks into the disk
                 for(int i = 0; i < size; i++){
-                    disk[index] = new Data_Block(datas[i]);
+                    disk[index] = new Data_Block(datas[i]); 
                     vcb.bit_map[index] = 1;
                     index++;
                 }
                 tWrite.release();
-                System.out.println("Write successfull");
+                System.out.println("Write successful");
             }
             else{
                 System.out.println("No such file found");
@@ -88,13 +90,13 @@ public class Main extends Thread {
     }
     static void open(String name){
         try {
-            int[] info = find_file(name);
-            Process_Open_File_Table[] proc = process_open_file_table.get();
-            Integer pI = proc_index.get();
+            int[] info = find_file(name); //find file to open
+            Process_Open_File_Table[] proc = process_open_file_table.get(); //gathers process specific thread of process open file table
+            Integer pI = proc_index.get(); //gathers the index of thread
 
             if(info[0] != -1){
                 tOpen.acquire();
-                int[] sys = findSys(name);
+                int[] sys = findSys(name); //get number of instances from the system open file table
                 if (sys[1] == -1) {//if file isnt in open file table
                  sys_open_file_table[sys_index] = new Sys_Open_File_Table(name, new File_Control_Block(info[2],(Data_Block)disk[info[1]]));
                  sys[0] = sys_index++;
@@ -120,7 +122,6 @@ public class Main extends Thread {
         try {
             int[] info = find_file(name);
             Process_Open_File_Table[] proc = process_open_file_table.get();
-            //Integer pI = proc_index.get();
             if(info[0] != -1){//ensures file exists
                 tOpen.acquire();
                 int[] sys = findSys(name);
@@ -146,10 +147,11 @@ public class Main extends Thread {
 
     static String read(String name) {
         StringBuilder content = new StringBuilder();
-        int[] info = find_file(name);
+        int[] info = find_file(name); //find file to read
         int index = info[1];
         Data_Block temp;
         if (info[0] != -1) {
+            //loop adds data from the file into a printable string
             for(int i = 0; i < info[2]; i++){
                 temp = (Data_Block)disk[index];
                 content.append(temp.getData());
