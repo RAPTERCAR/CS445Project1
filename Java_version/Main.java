@@ -74,6 +74,21 @@ public class Main extends Thread {
         process_open_file_table.set(proc);
         proc_index.set(pI);
     }
+
+    static String read(String name) {
+        StringBuilder content = new StringBuilder();
+        int[] info = find_file(name);
+        int index = info[1];
+        Data_Block temp;
+        if (info[0] != -1) {
+            for(int i = 0; i < info[2]; i++){
+                temp = (Data_Block)disk[index];
+                content.append(temp.getData());
+                index++;
+            }
+        }
+        return content.toString();
+    }
     //finds file in directory and returns array containing start and size, index 0 used to communicate if file found
     static int[] find_file(String name) {
         int[] contents = new int[3];
@@ -171,6 +186,10 @@ class Data_Block{
 
     public void modify_data(String s){
         data = s.toCharArray();
+    }
+
+    public String getData() {
+        return data.toString();
     }
 }
 
